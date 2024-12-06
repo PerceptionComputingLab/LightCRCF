@@ -3,14 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 '''
-The validation of the equivalent transformation type I
+The validation of the equivalent transformation type I.
+Conv_3x1x3 -> Conv_3x3x3
 '''
 
 class Net(nn.Module):
     def __init__(self, in_shape, out_shape):
         super().__init__()
-        self.conv331=nn.Conv3d(out_shape, out_shape, (3, 3, 1))
-        self.conv133 = nn.Conv3d(out_shape, out_shape, (1, 3, 3))
         self.conv313 = nn.Conv3d(out_shape, out_shape, (3, 1, 3))
         self.conv_fuse=nn.Conv3d(in_shape, out_shape, 3)
 
@@ -26,7 +25,7 @@ class Net(nn.Module):
             self.trans_conv_to_3x3x3(self.conv313)
 
     '''
-    multi-scale 3x3x1 -> 3x3x3
+    multi-scale 3x1x3 -> 3x3x3
     '''
     def trans_conv_to_3x3x3(self, conv):
         # 填充 3x3x1 卷积的权重
