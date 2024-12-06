@@ -46,7 +46,7 @@ class Net(nn.Module):
 
 feature_map=torch.randn(1,64,80,80,80)
 net=Net(64,64)
-# 不要重参数化的结果
+# 重参数化之前的结果
 net.eval()
 out1=net(feature_map)
 # 重参数化之后的结果
