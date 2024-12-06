@@ -22,12 +22,12 @@ class Net(nn.Module):
             return self.fuse_conv(x)
 
     def fuse_conv_BN(self):
-        self.fuse_conv.weight.data, self.fuse_conv.bias.data=self.transI_BN(self.conv1, self.BN)
+        self.fuse_conv.weight.data, self.fuse_conv.bias.data=self.transII_BN(self.conv1, self.BN)
 
     '''
     3x3x3-BN -> 3x3x3
     '''
-    def transI_BN(self, conv, bn):
+    def transII_BN(self, conv, bn):
 
         std = (bn.running_var + bn.eps).sqrt()
         gamma = bn.weight
