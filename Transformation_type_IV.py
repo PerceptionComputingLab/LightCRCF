@@ -35,7 +35,6 @@ class Net(nn.Module):
         return torch.cat(kernels, dim=0), torch.cat(biases)
 
 
-
 feature_map=torch.randn(1,32,80,80,80)
 net=Net(32,64)
 net.eval()
