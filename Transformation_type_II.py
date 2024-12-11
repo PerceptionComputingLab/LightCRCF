@@ -1,55 +1,54 @@
 import torch
-from torch import nn
+import torch.nn as nn
 import torch.nn.functional as F
 
 '''
-The validation of the equivalent transformation type II:
-Conv-BN --> Conv
+The validation of the equivalent transformation type III.
+Concat(Conv_3x3x3, Conv_3x3x3, Conv_3x3x3) ---> Conv_3x3x3
 '''
 
 class Net(nn.Module):
-    def __init__(self, in_shape, out_shape):
+    def __init__(self, in_channel, out_channel):
         super().__init__()
-        self.conv1=nn.Conv3d(in_shape, out_shape, 3)
-        self.BN=nn.BatchNorm3d(out_shape)
-        self.fuse_conv=nn.Conv3d(in_shape, out_shape, 3)
+        self.conv1=nn.Conv3d(in_channel, out_channel, 3, padding=1)
+        self.conv2=nn.Conv3d(in_channel, out_channel, 3, padding=1)
+        self.conv3=nn.Conv3d(in_channel, out_channel, 3, padding=1)
+        self.conv_fuse=nn.Conv3d(in_channel, out_channel * 3, 3, padding=1)
 
     def forward(self, x, fuse=False):
-        if fuse is False:
-            return self.BN(self.conv1(x))
+        if fuse:
+            self.fuse_concate()
+            return self.conv_fuse(x)
         else:
-            # self.fuse_conv_BN()
-            return self.fuse_conv(x)
+            o1=self.conv1(x)
+            o2=self.conv2(x)
+            o3=self.conv3(x)
+            return torch.cat([o1, o2, o3], dim=1)
 
-    def fuse_conv_BN(self):
-        self.fuse_conv.weight.data, self.fuse_conv.bias.data=self.transII_BN(self.conv1, self.BN)
+    def fuse_concate(self):
+        self.conv_fuse.weight.data, self.conv_fuse.bias.data = self.transIV_concat(
+            [self.conv1.weight.data, self.conv2.weight.data, self.conv3.weight.data],
+            [self.conv1.bias.data, self.conv2.bias.data, self.conv3.bias.data]
+        )
 
-    '''
-    3x3x3-BN -> 3x3x3
-    '''
-    def transII_BN(self, conv, bn):
-
-        std = (bn.running_var + bn.eps).sqrt()
-        gamma = bn.weight
-
-        weight = conv.weight * (gamma / std).reshape(-1, 1, 1, 1, 1)
-
-        if conv.bias is not None:
-            bias = (gamma / std * conv.bias) - (gamma / std * bn.running_mean) + bn.bias
-        else:
-            bias = bn.bias - (gamma / std * bn.running_mean)
-
-        return weight, bias
+    def transIV_concat(self, kernels, biases):
+        return torch.cat(kernels, dim=0), torch.cat(biases)
 
 
-feature_map=torch.randn(1,64,80,80,80)
-net=Net(64,64)
-# 不要重参数化的结果
+
+feature_map=torch.randn(1,32,80,80,80)
+net=Net(32,64)
 net.eval()
+
+
+# 重参数化之前的结果
 out1=net(feature_map)
 # 重参数化之后的结果
-net.fuse_conv_BN()
 out2=net(feature_map, fuse=True)
+
 # 验证前后的结果是否相同
 print("out1:", out1[0, 30, 40, 40:50, 40:50])
 print("out2:", out2[0, 30, 40, 40:50, 40:50])
+print("out1-out2:", (out1-out2)[0, 30, 40, 40:50, 40:50])
+print("difference:", ((out2-out1)**2).sum().item())
+print(out1.shape, out2.shape)
