@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 '''
-The validation of the equivalent transformation type III.
+The validation of the equivalent transformation type IV.
 Concat(Conv_3x3x3, Conv_3x3x3, Conv_3x3x3) ---> Conv_3x3x3
 '''
 
